@@ -8,9 +8,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-
-ssl_context = ssl_lib.create_default_context(cafile=certifi.where())
-app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
+app = App(token=os.environ.get("SLACK_BOT_TOKEN"), signing_secret=os.environ.get("SLACK_SIGNING_SECRET"))
 
 onboarding_tutorials_sent = {}
 
@@ -35,6 +33,11 @@ def start_onboarding(user_id: str, channel: str, client: WebClient):
     onboarding_tutorials_sent[channel][user_id] = onboarding_tutorial
 
 
+
+@app.event("assistant_thread_started")
+def handle_assistant_thread_started_events(body, logger):
+    logger.info(body)
+    
 # ================ Team Join Event =============== #
 # When the user first joins a team, the type of the event will be 'team_join'.
 # Here we'll link the onboarding_message callback to the 'team_join' event.
@@ -128,6 +131,7 @@ def message(event, client):
         return start_onboarding(user_id, channel_id, client)
 
 if __name__ == "__main__":
+    ssl_context = ssl_lib.create_default_context(cafile=certifi.where())
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
     logger.addHandler(logging.StreamHandler())
