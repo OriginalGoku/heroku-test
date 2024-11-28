@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ssl_context = ssl_lib.create_default_context(cafile=certifi.where())
-app = App()
+app = App(token=os.environ.get("SLACK_BOT_TOKEN"))
 
 onboarding_tutorials_sent = {}
 
