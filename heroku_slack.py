@@ -2,11 +2,12 @@ import logging
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 from flask import Flask, request
+from slack_sdk.web import WebClient
 from dotenv import load_dotenv
 import os
 import ssl as ssl_lib
 import certifi
-
+from onboarding_tutorial import OnboardingTutorial
 # Load environment variables
 load_dotenv()
 
@@ -16,6 +17,29 @@ bolt_app = App(token=os.environ.get("SLACK_BOT_TOKEN"), signing_secret=os.enviro
 # Flask app for serving the Bolt app
 flask_app = Flask(__name__)
 handler = SlackRequestHandler(bolt_app)
+
+onboarding_tutorials_sent = {}
+
+
+def start_onboarding(user_id: str, channel: str, client: WebClient):
+    # Create a new onboarding tutorial.
+    onboarding_tutorial = OnboardingTutorial(channel)
+
+    # Get the onboarding message payload
+    message = onboarding_tutorial.get_message_payload()
+
+    # Post the onboarding message in Slack
+    response = client.chat_postMessage(**message)
+
+    # Capture the timestamp of the message we've just posted so
+    # we can use it to update the message after a user
+    # has completed an onboarding task.
+    onboarding_tutorial.timestamp = response["ts"]
+
+    # Store the message sent in onboarding_tutorials_sent
+    if channel not in onboarding_tutorials_sent:
+        onboarding_tutorials_sent[channel] = {}
+    onboarding_tutorials_sent[channel][user_id] = onboarding_tutorial
 
 # Define a Flask route to handle Slack events
 @flask_app.route("/slack/events", methods=["POST"])
@@ -57,6 +81,7 @@ def message_handler(event, client):
             channel=channel_id,
             text=f"Replying to {user_id} from {channel_id} with {text} and Time Stamp: {ts}",
         )
+    return start_onboarding(user_id, channel_id, client)
 if __name__ == "__main__":
     ssl_context = ssl_lib.create_default_context(cafile=certifi.where())
     logger = logging.getLogger()
