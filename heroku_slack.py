@@ -35,6 +35,28 @@ def repeat_text(ack, say, command):
     ack()
     say(f"{command['text']}")
 
+
+# Register the `message` event listener
+@bolt_app.event("message")
+def message_handler(event, client):
+    """Display the onboarding welcome message after receiving a message
+    that contains "start".
+    """
+    channel_id = event.get("channel")
+    user_id = event.get("user")
+    text = event.get("text")
+    ts = event.get("ts")
+
+    print(f"user_id: {user_id}")
+    print(f"channel_id: {channel_id}")
+    print(f"Message: {text}")
+    print(f"ts: {ts}")
+
+    if text and "*start simulation*" in text.lower():
+        client.chat_postMessage(
+            channel=channel_id,
+            text=f"Replying to {user_id} from {channel_id} with {text} and Time Stamp: {ts}",
+        )
 if __name__ == "__main__":
     ssl_context = ssl_lib.create_default_context(cafile=certifi.where())
     logger = logging.getLogger()
