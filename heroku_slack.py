@@ -20,6 +20,58 @@ handler = SlackRequestHandler(bolt_app)
 
 onboarding_tutorials_sent = {}
 
+# ============= Reaction Added Events ============= #
+# When a users adds an emoji reaction to the onboarding message,
+# the type of the event will be 'reaction_added'.
+# Here we'll link the update_emoji callback to the 'reaction_added' event.
+@bolt_app.event("reaction_added")
+def update_emoji(event, client):
+    """Update the onboarding welcome message after receiving a "reaction_added"
+    event from Slack. Update timestamp for welcome message as well.
+    """
+    # Get the ids of the Slack user and channel associated with the incoming event
+    channel_id = event.get("item", {}).get("channel")
+    user_id = event.get("user")
+
+    if channel_id not in onboarding_tutorials_sent:
+        return
+
+    # Get the original tutorial sent.
+    onboarding_tutorial = onboarding_tutorials_sent[channel_id][user_id]
+
+    # Mark the reaction task as completed.
+    onboarding_tutorial.reaction_task_completed = True
+
+    # Get the new message payload
+    message = onboarding_tutorial.get_message_payload()
+
+    # Post the updated message in Slack
+    updated_message = client.chat_update(**message)
+
+
+# =============== Pin Added Events ================ #
+# When a users pins a message the type of the event will be 'pin_added'.
+# Here we'll link the update_pin callback to the 'pin_added' event.
+@bolt_app.event("pin_added")
+def update_pin(event, client):
+    """Update the onboarding welcome message after receiving a "pin_added"
+    event from Slack. Update timestamp for welcome message as well.
+    """
+    # Get the ids of the Slack user and channel associated with the incoming event
+    channel_id = event.get("channel_id")
+    user_id = event.get("user")
+
+    # Get the original tutorial sent.
+    onboarding_tutorial = onboarding_tutorials_sent[channel_id][user_id]
+
+    # Mark the pin task as completed.
+    onboarding_tutorial.pin_task_completed = True
+
+    # Get the new message payload
+    message = onboarding_tutorial.get_message_payload()
+
+    # Post the updated message in Slack
+    updated_message = client.chat_update(**message)
 
 def start_onboarding(user_id: str, channel: str, client: WebClient):
     # Create a new onboarding tutorial.
