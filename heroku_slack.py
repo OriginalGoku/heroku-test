@@ -33,6 +33,7 @@ def update_emoji(event, client):
     channel_id = event.get("item", {}).get("channel")
     user_id = event.get("user")
 
+    print(f"update_emoji: {event}\n\n")
     if channel_id not in onboarding_tutorials_sent:
         return
 
